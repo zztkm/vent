@@ -45,7 +45,7 @@ func loop() error {
 		HistoryCycling: true,
 	}
 
-	fmt.Println("Tiny shell. Type Ctrl-D to quit.")
+	fmt.Println("vent. Type Ctrl-D to quit.")
 	for {
 		text, err := editor.ReadLine(context.Background())
 		if err != nil {
