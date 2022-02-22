@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"os/user"
+	"path/filepath"
 	"strings"
 
 	"github.com/mattn/go-colorable"
@@ -56,8 +57,17 @@ func loop() error {
 		if len(fields) <= 0 {
 			continue
 		}
+		ext := filepath.Ext(fields[0])
 
-		cmd := exec.Command(fields[0], fields[1:]...)
+		cmd := &exec.Cmd{}
+		if ext == ".go" {
+			goRunFields := []string{"run", fields[0]}
+			goRunFields = append(goRunFields, fields[1:]...)
+			cmd = exec.Command("go", goRunFields...)
+		} else {
+			cmd = exec.Command(fields[0], fields[1:]...)
+		}
+
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
 		cmd.Stdin = os.Stdin
