@@ -1,32 +1,53 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"os/exec"
+	"os/user"
 	"strings"
 
-	"github.com/mattn/go-tty"
-	"github.com/mattn/go-tty/ttyutil"
+	"github.com/mattn/go-colorable"
+	"github.com/nyaosorg/go-readline-ny"
+	"github.com/nyaosorg/go-readline-ny/coloring"
+	"github.com/nyaosorg/go-readline-ny/simplehistory"
 )
 
-func loop() error {
-	fmt.Println("Tiny shell. Type Ctrl-D to quit.")
-
-	tty1, err := tty.Open()
+func prompt() (int, error) {
+	user, err := user.Current()
 	if err != nil {
-		return err
+		return 1, err
 	}
-	defer tty1.Close()
 
+	hostname, err := os.Hostname()
+	if err != nil {
+		return 1, err
+	}
+
+	dir, err := os.Getwd()
+	if err != nil {
+		return 1, err
+	}
+
+	promptStr := fmt.Sprintf("%v@%v:%v\n> ", user.Name, hostname, dir)
+	return fmt.Print(promptStr)
+}
+
+func loop() error {
+	history := simplehistory.New()
+
+	editor := readline.Editor{
+		Prompt:         prompt,
+		Writer:         colorable.NewColorableStdout(),
+		History:        history,
+		Coloring:       &coloring.VimBatch{},
+		HistoryCycling: true,
+	}
+
+	fmt.Println("Tiny shell. Type Ctrl-D to quit.")
 	for {
-		clean, err := tty1.Raw()
-		if err != nil {
-			return err
-		}
-		fmt.Println("Ready")
-		text, err := ttyutil.ReadLine(tty1)
-		clean()
+		text, err := editor.ReadLine(context.Background())
 		if err != nil {
 			return err
 		}
@@ -40,7 +61,10 @@ func loop() error {
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
 		cmd.Stdin = os.Stdin
+
 		cmd.Run()
+
+		history.Add(text)
 	}
 }
 
